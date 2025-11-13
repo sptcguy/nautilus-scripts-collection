@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Nautilus script that removes image metadata
+
+# Check for required depends
+if ! command -v exiftool &> /dev/null; then
+
+    zenity --error --text="Scrub failed: exiftool is not installed."
+    exit 1
+
+fi
+
+# Loop through files
+for file in "$@"; do
+
+    # Make sure file is an image
+    if file --mime-type "$file" | grep -q "image"; then
+
+        # Remove metadata (except orientation) and overwrite original using exiftool
+        exiftool -all= -tagsfromfile @ -Orientation "$file" -overwrite_original
+        echo "Metadata removed and overwritten for: $file"
+
+    else
+
+        echo "Skipping non-image file: $file"
+
+    fi
+
+done
+
+zenity --info --text="Metadata removal complete. Orientation data kept."
+

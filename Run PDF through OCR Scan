@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# Check if depends are installed
+if ! command -v ocrmypdf &> /dev/null; then
+
+    echo "ocrmypdf is not installed."
+    exit 1
+
+fi
+
+if ! command -v notify-send &> /dev/null; then
+
+    echo "libnotify-bin is not installed."
+    exit 1
+
+fi
+
+# Check if files are selected
+if [ -z "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" ]; then
+
+    echo "No files selected."
+    exit 1
+
+fi
+
+# Start OCR routine
+file_cnt=0
+
+# Set field separator for filenames with spaces
+IFS=$'\n'
+
+for selected_file in $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS; do
+
+    # Check if the selected file is a PDF
+    if [[ ! "$selected_file" =~ \.pdf$ ]]; then
+
+        echo "Skipping non-PDF file: $selected_file"
+        continue
+
+    fi
+
+    ((file_cnt++))
+
+    # Send OCR notification start notif
+    if [ "$file_cnt" -eq 1 ]; then
+
+        notify-send "Starting OCR scan" "Attempting OCR scan on $(echo "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | wc -l) files."
+
+    fi
+
+    # Perform OCR
+    output_file="${selected_file%.*}_ocr_scanned.pdf"
+    ocrmypdf --output-type pdf "$selected_file" "$output_file"
+
+    # Check if OCR was successful
+    if [ $? -eq 0 ]; then
+
+        notify-send "OCR Completed" "OCR process completed for $selected_file."
+
+    else
+
+        notify-send "OCR Failed" "OCR process failed for $selected_file. Please check the file."
+
+    fi
+
+done
+
+unset IFS
+
+exit 0
+

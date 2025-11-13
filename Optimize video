@@ -1,0 +1,57 @@
+#!/bin/bash
+
+for video in "$@"; do
+
+    # Get current resolution and bitrate
+    RESOLUTION=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$video")
+    BITRATE=$(ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate -of csv=p=0 "$video")
+
+    # Convert bitrate to Mbps
+    BITRATE_Mbps=$(echo "scale=2; $BITRATE / 1000000" | bc)
+
+    # Determine maximum bitrate based on resolution
+    WIDTH=$(echo "$RESOLUTION" | cut -d',' -f1)
+    HEIGHT=$(echo "$RESOLUTION" | cut -d',' -f2)
+
+    if [ "$WIDTH" -ge 3840 ]; then
+
+        MAX_BITRATE=25M
+
+    elif [ "$WIDTH" -ge 1920 ]; then
+
+        MAX_BITRATE=10M
+
+    else
+
+        MAX_BITRATE=3M   # Lower res
+
+    fi
+
+    # Print original file info
+    echo "Processing: $video"
+    echo "Resolution: $RESOLUTION"
+    echo "Bitrate: $BITRATE_Mbps Mbps"
+
+    # Check if bitrate is too high
+
+    if (( $(echo "$BITRATE_Mbps > ${MAX_BITRATE%M}" | bc -l) )); then
+
+        # Generate output filename
+        OUTPUT="${video%.*}_optimized.${video##*.}"
+
+        # Use ffmpeg to adjust bitrate
+        echo "Optimizing to $OUTPUT with target bitrate of $MAX_BITRATE..."
+        ffmpeg -i "$video" -b:v "$MAX_BITRATE" -c:a copy "$OUTPUT"
+
+        echo "Optimized file created: $OUTPUT"
+
+    else
+
+        echo "Bitrate is acceptable, no optimization needed."
+
+    fi
+
+    echo "-----------------------------------"
+
+done
+

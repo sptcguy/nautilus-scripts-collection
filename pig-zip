@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Get the selected file/directory
+
+
+for FILE in "$@"; do
+
+    if [ -e "$FILE" ]; then
+
+        # Gnerate a filename
+        OUTPUT="${FILE}.tar.gz"
+
+        # Run pigz command
+        tar cf - "$FILE" | pigz -p 6 > "$OUTPUT"
+
+        # Notify the user
+        notify-send "Compression Complete" "$OUTPUT has been created." --icon=dialog-information
+
+    else
+
+        notify-send "Error" "$FILE does not exist!" --icon=dialog-error
+
+    fi
+
+done
+

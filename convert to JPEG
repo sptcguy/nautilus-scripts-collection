@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Nautilus script to convert any non-JPEG image to JPEG using ImageMagick's convert
+
+# Check if ImageMagick is installed
+if ! command -v convert &> /dev/null; then
+    zenity --error --text="Depends error: ImageMagick is not installed."
+    exit 1
+fi
+
+# Loop through selected files
+for file in "$@"; do
+    # Check if the file is not a JPEG image
+    if ! file --mime-type "$file" | grep -q "image/jpeg"; then
+        # Convert non-JPEG image to JPEG using ImageMagick's convert
+        convert "$file" "${file%.*}.jpg"
+        echo "Converted to JPEG: ${file%.*}.jpg"
+    else
+        echo "Skipping JPEG file: $file"
+    fi
+done
+
+zenity --info --text="Conversion to JPEG complete for selected images."
